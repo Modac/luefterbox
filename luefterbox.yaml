@@ -1,0 +1,122 @@
+esphome:
+  name: luefterbox
+  on_boot:
+    - priority: 300
+      then:
+        - fan.turn_on:
+            id: the_fan
+    - priority: -100
+      then:
+        - fan.turn_on:
+            id: the_fan
+            speed: 42
+
+
+esp8266:
+  board: d1_mini
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: "luefterbox"
+
+ota:
+  password: "luefterbox"
+
+wifi:
+  ssid: !secrets wifi1
+  password: !secrets wifi1_pw
+  domain: ".fritz.box"
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Luefterbox Fallback Hotspot"
+    password: !secrets fallback_pw
+
+captive_portal:
+    
+web_server:
+  port: 80
+
+
+sensor:
+  # Send WiFi signal strength & uptime to HA                                                                                                                                                                                             
+  - platform: wifi_signal
+    name: WiFi Strength
+    update_interval: 60s
+                                                                                                                                                                                                           
+  - platform: pulse_counter
+    pin:
+      number: D2
+      mode:
+        input: true
+        pullup: true
+    name: Measured Speed 1
+    id: fan_pulse1
+    unit_of_measurement: 'RPM'
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.5
+    count_mode:
+      rising_edge: INCREMENT
+      falling_edge: DISABLE
+    update_interval: 5s 
+
+  - platform: pulse_counter
+    pin:
+      number: D3
+      mode:
+        input: true
+        pullup: true
+    name: Measured Speed 2
+    id: fan_pulse2
+    unit_of_measurement: 'RPM'
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.5
+    count_mode:
+      rising_edge: INCREMENT
+      falling_edge: DISABLE
+    update_interval: 5s 
+
+  - platform: pulse_counter
+    pin:
+      number: D4
+      mode:
+        input: true
+        pullup: true
+    name: Measured Speed 3
+    id: fan_pulse3
+    unit_of_measurement: 'RPM'
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.5
+    count_mode:
+      rising_edge: INCREMENT
+      falling_edge: DISABLE
+    update_interval: 5s
+
+output:
+  # Wire D1 into the PWM pin of your 12v fan                                                                                                                                                                                  
+  # ledc is the name of the pwm output system on an esp32                                                                                                                                                                                
+  - platform: esp8266_pwm
+    id: fan_speed
+    pin: D1
+
+    # 25KHz is standard PC fan frequency, minimises buzzing for eso8266 1kHz is max                                                                                                                                                                           
+    frequency: "25000 Hz"
+
+    # my fans stop working below 13% powerful.                                                                                                                                                                                           
+    # also they're  powerful and loud, cap their max speed to 80%                                                                                                                                                                        
+    min_power: 0
+    max_power: 1
+    zero_means_zero: True
+
+fan:
+  - platform: speed
+    output: fan_speed
+    name: Fan
+    id: the_fan
+    restore_mode: NO_RESTORE
